@@ -36,6 +36,11 @@ const navigation: SidebarItemType[] = [
     href: "/dashboard/audit-logs",
     icon: AuditLogsIcon,
   },
+  {
+    name: "AI Search",
+    href: "/dashboard/ai-search",
+    icon: AiSearchIcon,
+  },
 ];
 
 const superAdminManagement: SidebarItemType[] = [
@@ -673,7 +678,6 @@ function SessionsIcon({ className }: { className?: string }) {
     </IconBase>
   );
 }
-
 function SecurityIcon({ className }: { className?: string }) {
   return (
     <IconBase className={className}>
@@ -690,6 +694,17 @@ function AuditLogsIcon({ className }: { className?: string }) {
       <path d="M8 8h8" />
       <path d="M8 12h8" />
       <path d="M8 16h5" />
+    </IconBase>
+  );
+}
+
+function AiSearchIcon({ className }: { className?: string }) {
+  return (
+    <IconBase className={className}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+      <path d="M8.5 11h5" />
+      <path d="M11 8.5v5" />
     </IconBase>
   );
 }
