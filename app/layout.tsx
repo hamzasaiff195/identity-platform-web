@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { TenantProvider } from "@/providers/tenant-provider";
 
 export const metadata: Metadata = {
   title: "Identity Platform",
@@ -19,7 +20,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <TenantProvider>{children}</TenantProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

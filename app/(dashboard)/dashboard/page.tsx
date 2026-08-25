@@ -15,8 +15,14 @@ export default function DashboardPage() {
     return null;
   }
 
-  /**
-   * ROLE PRIORITY
+  /*
+   * --------------------------------------------------------------------------
+   * DASHBOARD HIERARCHY
+   * --------------------------------------------------------------------------
+   *
+   * A user may have multiple system roles.
+   *
+   * Dashboard priority:
    *
    * SUPER_ADMIN
    *      ↓
@@ -24,8 +30,10 @@ export default function DashboardPage() {
    *      ↓
    * USER
    *
-   * Super admin always wins if the user
-   * has multiple system roles.
+   * If a user has both SUPER_ADMIN and ADMIN,
+   * SUPER_ADMIN dashboard wins.
+   *
+   * Normal users never receive administration UI.
    */
 
   if (isSuperAdmin) {
@@ -39,9 +47,9 @@ export default function DashboardPage() {
   return <UserDashboard user={user} />;
 }
 
-/* =========================================================
+/* =============================================================================
    SUPER ADMIN DASHBOARD
-   ========================================================= */
+   ============================================================================= */
 
 function SuperAdminDashboard({ user }: { user: DashboardUser }) {
   return (
@@ -50,7 +58,7 @@ function SuperAdminDashboard({ user }: { user: DashboardUser }) {
         eyebrow="Platform administration"
         title="Welcome back"
         email={user.email}
-        description="Manage the entire Identity Platform, including tenants, roles, permissions, users and security."
+        description="Manage the entire Identity Platform, including users, tenants, roles, permissions and security."
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -84,30 +92,35 @@ function SuperAdminDashboard({ user }: { user: DashboardUser }) {
           eyebrow="Platform"
           title="Platform management"
           description="Manage the global Identity Platform."
-          items={["Users", "Tenants", "Roles", "Permissions"]}
+          items={["Users", "Tenants", "System roles", "Permissions"]}
+        />
+
+        <DashboardCard
+          eyebrow="Authorization"
+          title="Access control"
+          description="Manage roles and permissions across the platform."
+          items={[
+            "System roles",
+            "Tenant roles",
+            "Role permissions",
+            "Tenant access",
+          ]}
         />
 
         <DashboardCard
           eyebrow="Security"
           title="Security & auditing"
           description="Monitor authentication and platform activity."
-          items={["Sessions", "Security", "Audit Logs"]}
-        />
-
-        <DashboardCard
-          eyebrow="Access"
-          title="Authorization"
-          description="Control system-wide access and permissions."
-          items={["System roles", "Permissions", "Tenant access"]}
+          items={["Sessions", "Audit logs", "Account security"]}
         />
       </section>
     </div>
   );
 }
 
-/* =========================================================
+/* =============================================================================
    TENANT ADMIN DASHBOARD
-   ========================================================= */
+   ============================================================================= */
 
 function AdminDashboard({ user }: { user: DashboardUser }) {
   return (
@@ -116,7 +129,7 @@ function AdminDashboard({ user }: { user: DashboardUser }) {
         eyebrow="Tenant administration"
         title="Welcome back"
         email={user.email}
-        description="Manage users, authentication activity and tenant-level access within your organization."
+        description="Manage your organization's users, roles, permissions and authentication activity."
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -149,24 +162,24 @@ function AdminDashboard({ user }: { user: DashboardUser }) {
         <DashboardCard
           eyebrow="Workspace"
           title="Tenant management"
-          description="Manage users and authentication activity for your tenant."
-          items={["Users", "Sessions", "Security"]}
+          description="Manage users and authentication activity within your organization."
+          items={["Users", "Tenant members", "Sessions", "Security"]}
         />
 
         <DashboardCard
           eyebrow="Access control"
           title="Tenant authorization"
-          description="Manage tenant-level roles and permissions."
-          items={["Tenant roles", "Permissions"]}
+          description="Manage tenant roles and the permissions assigned to them."
+          items={["Tenant roles", "Role assignments", "Permissions"]}
         />
       </section>
     </div>
   );
 }
 
-/* =========================================================
+/* =============================================================================
    NORMAL USER DASHBOARD
-   ========================================================= */
+   ============================================================================= */
 
 function UserDashboard({ user }: { user: DashboardUser }) {
   return (
@@ -205,6 +218,8 @@ function UserDashboard({ user }: { user: DashboardUser }) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
+        {/* Account overview */}
+
         <div
           className="
             rounded-3xl
@@ -246,6 +261,8 @@ function UserDashboard({ user }: { user: DashboardUser }) {
             />
           </div>
         </div>
+
+        {/* Security */}
 
         <div
           className="
@@ -290,9 +307,9 @@ function UserDashboard({ user }: { user: DashboardUser }) {
   );
 }
 
-/* =========================================================
+/* =============================================================================
    HERO
-   ========================================================= */
+   ============================================================================= */
 
 function DashboardHero({
   eyebrow,
@@ -305,7 +322,7 @@ function DashboardHero({
   email: string;
   description: string;
 }) {
-  const name = email.split("@")[0]?.split(/[._-]/)[0] ?? "there";
+  const name = email.split("@")[0]?.split(/[._-]/)[0]?.trim() || "there";
 
   return (
     <section
@@ -412,9 +429,9 @@ function DashboardHero({
   );
 }
 
-/* =========================================================
+/* =============================================================================
    STAT CARD
-   ========================================================= */
+   ============================================================================= */
 
 function StatCard({
   title,
@@ -477,9 +494,9 @@ function StatCard({
   );
 }
 
-/* =========================================================
+/* =============================================================================
    DASHBOARD CARD
-   ========================================================= */
+   ============================================================================= */
 
 function DashboardCard({
   eyebrow,
@@ -561,9 +578,9 @@ function DashboardCard({
   );
 }
 
-/* =========================================================
+/* =============================================================================
    INFO ROW
-   ========================================================= */
+   ============================================================================= */
 
 function InfoRow({ label, value }: { label: string; value?: string }) {
   return (
@@ -595,9 +612,9 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
-/* =========================================================
+/* =============================================================================
    SECURITY ITEM
-   ========================================================= */
+   ============================================================================= */
 
 function SecurityItem({ label, enabled }: { label: string; enabled: boolean }) {
   return (
@@ -627,9 +644,9 @@ function SecurityItem({ label, enabled }: { label: string; enabled: boolean }) {
   );
 }
 
-/* =========================================================
+/* =============================================================================
    LOADING
-   ========================================================= */
+   ============================================================================= */
 
 function DashboardLoading() {
   return (

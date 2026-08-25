@@ -1,45 +1,17 @@
 import { api } from "@/lib/api";
 
-// -----------------------------------------------------------------------------
-// Types
-// -----------------------------------------------------------------------------
+export type TenantStatus = "ACTIVE" | "INACTIVE";
 
 export type Tenant = {
   id: string;
   name: string;
   slug: string;
-  description?: string | null;
-  legalName?: string | null;
   contactEmail?: string | null;
-  contactPhone?: string | null;
-  websiteUrl?: string | null;
-  city?: string | null;
-  state?: string | null;
-  country?: string | null;
-  timezone?: string | null;
+  status: TenantStatus;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
-};
-
-export type CreateTenantInput = {
-  name: string;
-  slug: string;
-  description?: string;
-  legalName?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  websiteUrl?: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  timezone?: string;
-};
-
-export type CreateTenantResponse = {
-  message: string;
-  tenant: Tenant;
 };
 
 export type TenantPagination = {
@@ -51,79 +23,50 @@ export type TenantPagination = {
   hasPreviousPage: boolean;
 };
 
-export type Pagination = TenantPagination;
+export type TenantsResponse = {
+  tenants: Tenant[];
+  pagination: TenantPagination;
+};
 
 export type TenantMember = {
   id: string;
-  tenantId: string;
   userId: string;
-  joinedAt: string;
+  tenantId: string;
+  isActive: boolean;
+  joinedAt?: string;
   user: {
     id: string;
     email: string;
-    status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
-    isVerified: boolean;
+    status: string;
     isEmailVerified: boolean;
-    createdAt?: string;
   };
 };
 
-export type UpdateTenantInput = {
-  name?: string;
-  slug?: string;
-  description?: string;
-  legalName?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  websiteUrl?: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  timezone?: string;
-  isActive?: boolean;
+export type TenantMembersResponse = {
+  members: TenantMember[];
+  pagination: TenantPagination;
 };
 
 // -----------------------------------------------------------------------------
-// Create tenant
-// -----------------------------------------------------------------------------
-
-export async function createTenant(
-  accessToken: string,
-  data: CreateTenantInput
-): Promise<CreateTenantResponse> {
-  return api.post<CreateTenantResponse>("/tenants", data, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
-
-// -----------------------------------------------------------------------------
-// Get tenants
+// GET MY TENANTS
 // -----------------------------------------------------------------------------
 
 export async function getTenants(
   accessToken: string,
   page = 1,
   limit = 10,
-  search = ""
-): Promise<{
-  tenants: Tenant[];
-  pagination: TenantPagination;
-}> {
+  search?: string
+): Promise<TenantsResponse> {
   const params = new URLSearchParams();
 
   params.set("page", String(page));
   params.set("limit", String(limit));
 
-  if (search.trim()) {
+  if (search?.trim()) {
     params.set("search", search.trim());
   }
 
-  return api.get<{
-    tenants: Tenant[];
-    pagination: TenantPagination;
-  }>(`/tenants?${params.toString()}`, {
+  return api.get<TenantsResponse>(`/tenants?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -131,7 +74,7 @@ export async function getTenants(
 }
 
 // -----------------------------------------------------------------------------
-// Get single tenant
+// GET TENANT
 // -----------------------------------------------------------------------------
 
 export async function getTenant(
@@ -146,13 +89,37 @@ export async function getTenant(
 }
 
 // -----------------------------------------------------------------------------
-// Update tenant
+// CREATE TENANT
+// -----------------------------------------------------------------------------
+
+export async function createTenant(
+  accessToken: string,
+  data: {
+    name: string;
+    slug: string;
+    contactEmail?: string;
+  }
+): Promise<Tenant> {
+  return api.post<Tenant>("/tenants", data, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+// -----------------------------------------------------------------------------
+// UPDATE TENANT
 // -----------------------------------------------------------------------------
 
 export async function updateTenant(
   accessToken: string,
   tenantId: string,
-  data: UpdateTenantInput
+  data: {
+    name?: string;
+    slug?: string;
+    contactEmail?: string;
+    status?: TenantStatus;
+  }
 ): Promise<Tenant> {
   return api.patch<Tenant>(`/tenants/${tenantId}`, data, {
     headers: {
@@ -162,7 +129,7 @@ export async function updateTenant(
 }
 
 // -----------------------------------------------------------------------------
-// Get tenant members
+// GET MEMBERS
 // -----------------------------------------------------------------------------
 
 export async function getTenantMembers(
@@ -170,44 +137,19 @@ export async function getTenantMembers(
   tenantId: string,
   page = 1,
   limit = 10,
-  search = ""
-): Promise<{
-  members: TenantMember[];
-  pagination: Pagination;
-}> {
+  search?: string
+): Promise<TenantMembersResponse> {
   const params = new URLSearchParams();
 
   params.set("page", String(page));
   params.set("limit", String(limit));
 
-  if (search.trim()) {
+  if (search?.trim()) {
     params.set("search", search.trim());
   }
 
-  return api.get<{
-    members: TenantMember[];
-    pagination: Pagination;
-  }>(`/tenants/${tenantId}/members?${params.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
-
-// -----------------------------------------------------------------------------
-// Add member
-// -----------------------------------------------------------------------------
-
-export async function addTenantMember(
-  accessToken: string,
-  tenantId: string,
-  userId: string
-): Promise<TenantMember> {
-  return api.post<TenantMember>(
-    `/tenants/${tenantId}/members`,
-    {
-      userId,
-    },
+  return api.get<TenantMembersResponse>(
+    `/tenants/${tenantId}/members?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -217,7 +159,27 @@ export async function addTenantMember(
 }
 
 // -----------------------------------------------------------------------------
-// Remove member
+// ADD MEMBER
+// -----------------------------------------------------------------------------
+
+export async function addTenantMember(
+  accessToken: string,
+  tenantId: string,
+  userId: string
+): Promise<TenantMember> {
+  return api.post<TenantMember>(
+    `/tenants/${tenantId}/members`,
+    { userId },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
+// -----------------------------------------------------------------------------
+// REMOVE MEMBER
 // -----------------------------------------------------------------------------
 
 export async function removeTenantMember(

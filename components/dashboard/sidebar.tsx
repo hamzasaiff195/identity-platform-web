@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 import { useAuth } from "@/providers/auth-provider";
 
-const navigation = [
+type SidebarItemType = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const navigation: SidebarItemType[] = [
   {
     name: "Overview",
     href: "/dashboard",
@@ -33,7 +38,7 @@ const navigation = [
   },
 ];
 
-const superAdminManagement = [
+const superAdminManagement: SidebarItemType[] = [
   {
     name: "Roles",
     href: "/dashboard/roles",
@@ -51,7 +56,7 @@ const superAdminManagement = [
   },
 ];
 
-const adminManagement = [
+const adminManagement: SidebarItemType[] = [
   {
     name: "Tenant Roles",
     href: "/dashboard/roles",
@@ -61,6 +66,14 @@ const adminManagement = [
     name: "Permissions",
     href: "/dashboard/permissions",
     icon: PermissionsIcon,
+  },
+];
+
+const systemNavigation: SidebarItemType[] = [
+  {
+    name: "Settings",
+    href: "/dashboard/settings",
+    icon: SettingsIcon,
   },
 ];
 
@@ -89,16 +102,12 @@ export function Sidebar({
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  /**
-   * Don't render role-dependent navigation until
-   * authentication has finished loading.
-   */
   const showSuperAdminManagement = !loading && isSuperAdmin;
-
   const showAdminManagement = !loading && !isSuperAdmin && isAdmin;
 
   return (
     <>
+      {/* Mobile overlay */}
       {mobileOpen && (
         <button
           type="button"
@@ -114,6 +123,7 @@ export function Sidebar({
         />
       )}
 
+      {/* Sidebar */}
       <aside
         className={`
           fixed
@@ -121,6 +131,7 @@ export function Sidebar({
           left-0
           z-50
           flex
+          w-64
           flex-col
           border-r
           border-[var(--border)]
@@ -129,14 +140,18 @@ export function Sidebar({
           transition-[width,transform]
           duration-200
           ease-in-out
-          w-64
+
           ${collapsed ? "lg:w-[72px]" : "lg:w-64"}
+
           -translate-x-full
           lg:translate-x-0
+
           ${mobileOpen ? "translate-x-0" : ""}
         `}
       >
-        {/* Brand */}
+        {/* ========================================================= */}
+        {/* BRAND */}
+        {/* ========================================================= */}
 
         <div
           className={`
@@ -147,6 +162,7 @@ export function Sidebar({
             border-b
             border-[var(--border)]
             px-6
+
             ${collapsed ? "lg:justify-center lg:px-0" : ""}
           `}
         >
@@ -189,6 +205,7 @@ export function Sidebar({
                 whitespace-nowrap
                 transition-all
                 duration-200
+
                 ${collapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"}
               `}
             >
@@ -218,9 +235,13 @@ export function Sidebar({
           </Link>
         </div>
 
-        {/* Navigation */}
+        {/* ========================================================= */}
+        {/* NAVIGATION */}
+        {/* ========================================================= */}
 
         <nav className="flex-1 overflow-y-auto px-3 py-6">
+          {/* Workspace */}
+
           <SidebarSectionLabel label="Workspace" collapsed={collapsed} first />
 
           <div className="space-y-1">
@@ -235,7 +256,9 @@ export function Sidebar({
             ))}
           </div>
 
+          {/* ===================================================== */}
           {/* SUPER ADMIN */}
+          {/* ===================================================== */}
 
           {showSuperAdminManagement && (
             <>
@@ -258,7 +281,9 @@ export function Sidebar({
             </>
           )}
 
+          {/* ===================================================== */}
           {/* TENANT ADMIN */}
+          {/* ===================================================== */}
 
           {showAdminManagement && (
             <>
@@ -281,23 +306,28 @@ export function Sidebar({
             </>
           )}
 
-          {/* System */}
+          {/* ===================================================== */}
+          {/* SYSTEM */}
+          {/* ===================================================== */}
 
           <SidebarSectionLabel label="System" collapsed={collapsed} />
 
-          <SidebarItem
-            item={{
-              name: "Settings",
-              href: "/dashboard/settings",
-              icon: SettingsIcon,
-            }}
-            active={isActive("/dashboard/settings")}
-            collapsed={collapsed}
-            onCloseMobile={onCloseMobile}
-          />
+          <div className="space-y-1">
+            {systemNavigation.map((item) => (
+              <SidebarItem
+                key={item.href}
+                item={item}
+                active={isActive(item.href)}
+                collapsed={collapsed}
+                onCloseMobile={onCloseMobile}
+              />
+            ))}
+          </div>
         </nav>
 
-        {/* Environment */}
+        {/* ========================================================= */}
+        {/* ENVIRONMENT */}
+        {/* ========================================================= */}
 
         <div
           className={`
@@ -305,6 +335,7 @@ export function Sidebar({
             border-t
             border-[var(--border)]
             p-4
+
             ${collapsed ? "lg:p-3" : ""}
           `}
         >
@@ -315,6 +346,7 @@ export function Sidebar({
               border-[var(--border)]
               bg-[var(--surface-muted)]
               p-4
+
               ${collapsed ? "lg:p-2" : ""}
             `}
           >
@@ -323,6 +355,7 @@ export function Sidebar({
                 flex
                 items-center
                 justify-between
+
                 ${collapsed ? "lg:justify-center" : ""}
               `}
             >
@@ -333,6 +366,7 @@ export function Sidebar({
                   uppercase
                   tracking-[0.18em]
                   text-[var(--foreground-subtle)]
+
                   ${collapsed ? "lg:hidden" : ""}
                 `}
               >
@@ -357,6 +391,7 @@ export function Sidebar({
                 flex
                 items-center
                 justify-between
+
                 ${collapsed ? "lg:hidden" : ""}
               `}
             >
@@ -387,6 +422,8 @@ export function Sidebar({
               </span>
             </div>
           </div>
+
+          {/* Collapse button */}
 
           <button
             type="button"
@@ -421,6 +458,10 @@ export function Sidebar({
   );
 }
 
+/* ========================================================================== */
+/* SECTION LABEL                                                              */
+/* ========================================================================== */
+
 function SidebarSectionLabel({
   label,
   collapsed,
@@ -440,7 +481,9 @@ function SidebarSectionLabel({
         tracking-[0.2em]
         text-[var(--foreground-subtle)]
         transition-all
+
         ${first ? "mb-3" : "mb-3 mt-8"}
+
         ${collapsed ? "lg:hidden" : ""}
       `}
     >
@@ -449,19 +492,17 @@ function SidebarSectionLabel({
   );
 }
 
+/* ========================================================================== */
+/* SIDEBAR ITEM                                                               */
+/* ========================================================================== */
+
 function SidebarItem({
   item,
   active,
   collapsed,
   onCloseMobile,
 }: {
-  item: {
-    name: string;
-    href: string;
-    icon: React.ComponentType<{
-      className?: string;
-    }>;
-  };
+  item: SidebarItemType;
   active: boolean;
   collapsed: boolean;
   onCloseMobile: () => void;
@@ -494,6 +535,8 @@ function SidebarItem({
         ${collapsed ? "lg:justify-center lg:px-0" : ""}
       `}
     >
+      {/* Active indicator */}
+
       {active && (
         <span
           className="
@@ -506,6 +549,8 @@ function SidebarItem({
           "
         />
       )}
+
+      {/* Icon */}
 
       <span
         className={`
@@ -529,17 +574,22 @@ function SidebarItem({
         <Icon className="h-4 w-4" />
       </span>
 
+      {/* Label */}
+
       <span
         className={`
           overflow-hidden
           whitespace-nowrap
           transition-all
           duration-200
+
           ${collapsed ? "lg:hidden" : ""}
         `}
       >
         {item.name}
       </span>
+
+      {/* Active dot */}
 
       {active && (
         <span
@@ -550,6 +600,7 @@ function SidebarItem({
             shrink-0
             rounded-full
             bg-[var(--primary)]
+
             ${collapsed ? "lg:hidden" : ""}
           `}
         />
@@ -557,6 +608,10 @@ function SidebarItem({
     </Link>
   );
 }
+
+/* ========================================================================== */
+/* ICON BASE                                                                  */
+/* ========================================================================== */
 
 function IconBase({
   children,
@@ -580,6 +635,10 @@ function IconBase({
     </svg>
   );
 }
+
+/* ========================================================================== */
+/* ICONS                                                                      */
+/* ========================================================================== */
 
 function DashboardIcon({ className }: { className?: string }) {
   return (
