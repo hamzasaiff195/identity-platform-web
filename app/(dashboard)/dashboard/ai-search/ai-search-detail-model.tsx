@@ -322,8 +322,13 @@ export function AiSearchDetailModal({
 /* ========================================================================= */
 
 function RoleDetails({ role }: { role: AiSearchRoleData }) {
+  const resourcePermissions = role.resourcePermissions ?? [];
+  const resourceCapabilities = role.resourceCapabilities ?? [];
+
   return (
     <div className="space-y-7">
+      {/* ROLE INFORMATION */}
+
       <section>
         <SectionTitle
           icon={<Shield className="h-4 w-4" />}
@@ -340,6 +345,8 @@ function RoleDetails({ role }: { role: AiSearchRoleData }) {
           <Info label="Tenant" value={role.tenantName} />
         </div>
       </section>
+
+      {/* DESCRIPTION */}
 
       <section>
         <SectionTitle
@@ -364,9 +371,185 @@ function RoleDetails({ role }: { role: AiSearchRoleData }) {
         </div>
       </section>
 
+      {/* STANDARD PERMISSIONS */}
+
       <TagSection title="Permissions" values={role.permissions ?? []} />
 
+      {/* STANDARD CAPABILITIES */}
+
       <TagSection title="Capabilities" values={role.capabilities ?? []} check />
+
+      {/* RESOURCE PERMISSIONS */}
+
+      <section>
+        <SectionTitle
+          icon={<Shield className="h-4 w-4" />}
+          title="Resource Permissions"
+        />
+
+        {resourcePermissions.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--foreground-muted)]">
+            No resource-specific permissions assigned.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {resourcePermissions.map((resourcePermission, index) => (
+              <div
+                key={`${resourcePermission.permission}-${resourcePermission.resourceType}-${resourcePermission.resourceId}-${index}`}
+                className="
+                  rounded-xl
+                  border
+                  border-[var(--border)]
+                  bg-[var(--surface-muted)]
+                  p-4
+                "
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="
+                      rounded-lg
+                      border
+                      border-[var(--border)]
+                      bg-[var(--surface)]
+                      px-2.5
+                      py-1.5
+                      font-mono
+                      text-xs
+                      font-semibold
+                    "
+                  >
+                    {resourcePermission.permission}
+                  </span>
+
+                  <span
+                    className="
+                      rounded-lg
+                      bg-[var(--primary-soft)]
+                      px-2.5
+                      py-1.5
+                      font-mono
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-wide
+                      text-[var(--primary)]
+                    "
+                  >
+                    {resourcePermission.resourceType}
+                  </span>
+                </div>
+
+                <div className="mt-3">
+                  <p
+                    className="
+                      font-mono
+                      text-[9px]
+                      uppercase
+                      tracking-widest
+                      text-[var(--foreground-subtle)]
+                    "
+                  >
+                    Resource ID
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      break-all
+                      font-mono
+                      text-xs
+                      text-[var(--foreground-muted)]
+                    "
+                  >
+                    {resourcePermission.resourceId}
+                  </p>
+                </div>
+
+                {resourcePermission.metadata !== null &&
+                  resourcePermission.metadata !== undefined && (
+                    <div className="mt-3">
+                      <p
+                        className="
+                          font-mono
+                          text-[9px]
+                          uppercase
+                          tracking-widest
+                          text-[var(--foreground-subtle)]
+                        "
+                      >
+                        Metadata
+                      </p>
+
+                      <pre
+                        className="
+                          mt-2
+                          overflow-x-auto
+                          rounded-lg
+                          border
+                          border-[var(--border)]
+                          bg-[var(--surface)]
+                          p-3
+                          font-mono
+                          text-[10px]
+                          leading-5
+                          text-[var(--foreground-muted)]
+                        "
+                      >
+                        {JSON.stringify(resourcePermission.metadata, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* RESOURCE CAPABILITIES */}
+
+      <section>
+        <SectionTitle
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          title="Resource Capabilities"
+        />
+
+        {resourceCapabilities.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--foreground-muted)]">
+            No resource-specific capabilities assigned.
+          </p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {resourceCapabilities.map((value, index) => (
+              <span
+                key={`${value}-${index}`}
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  border
+                  border-[var(--border)]
+                  bg-[var(--surface-muted)]
+                  px-3
+                  py-2
+                  text-xs
+                "
+              >
+                <CheckCircle2
+                  className="
+                    h-3.5
+                    w-3.5
+                    shrink-0
+                    text-[var(--success)]
+                  "
+                />
+
+                {value}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

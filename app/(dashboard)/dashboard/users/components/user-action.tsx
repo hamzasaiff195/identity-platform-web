@@ -1,17 +1,33 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import {
+  Eye,
+  Pencil,
+  RotateCcw,
+  ShieldAlert,
+  Trash2,
+  UserCheck,
+  UserX,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { User, UserStatus } from "@/lib/users-api";
 
 type UserActionsProps = {
   user: User;
+
   onView: (user: User) => void;
+
   onEdit: (user: User) => void;
+
   onStatusChange: (user: User, status: UserStatus) => void;
+
   onRevokeSessions: (user: User) => void;
+
   onDelete: (user: User) => void;
+
   onRestore: (user: User) => void;
 };
 
@@ -48,14 +64,6 @@ export function UserActions({
     setMounted(true);
   }, []);
 
-  /**
-   * Calculate the menu position relative to the
-   * three-dot button.
-   *
-   * Because the menu uses `position: fixed`,
-   * getBoundingClientRect() gives us exactly
-   * the coordinates we need.
-   */
   function updateMenuPosition() {
     const button = buttonRef.current;
 
@@ -67,48 +75,20 @@ export function UserActions({
 
     const menuElement = menuRef.current;
 
-    /*
-     * Use the real menu height when available.
-     * This is much more reliable than hard-coding
-     * a menu height.
-     */
     const menuHeight = menuElement?.offsetHeight ?? 360;
 
-    /*
-     * Align the right edge of the menu with the
-     * right edge of the three-dot button.
-     */
     let left = rect.right - MENU_WIDTH;
-
-    /*
-     * Default position:
-     *
-     *     [ button ]
-     *          ↓
-     *     [ menu   ]
-     */
     let top = rect.bottom + MENU_GAP;
 
-    /*
-     * Prevent horizontal overflow on the left.
-     */
     if (left < VIEWPORT_PADDING) {
       left = VIEWPORT_PADDING;
     }
 
-    /*
-     * Prevent horizontal overflow on the right.
-     */
     if (left + MENU_WIDTH > window.innerWidth - VIEWPORT_PADDING) {
       left = window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING;
     }
 
-    /*
-     * If the menu doesn't fit below the button,
-     * open it above the button.
-     */
     const spaceBelow = window.innerHeight - rect.bottom;
-
     const spaceAbove = rect.top;
 
     if (
@@ -118,9 +98,6 @@ export function UserActions({
       top = rect.top - menuHeight - MENU_GAP;
     }
 
-    /*
-     * Final vertical safety check.
-     */
     if (top < VIEWPORT_PADDING) {
       top = VIEWPORT_PADDING;
     }
@@ -136,21 +113,16 @@ export function UserActions({
   }
 
   function handleToggle() {
-    if (!open) {
-      setOpen(true);
-
-      /*
-       * Wait until the portal/menu has rendered,
-       * then calculate its real height.
-       */
-      requestAnimationFrame(() => {
-        updateMenuPosition();
-      });
-
+    if (open) {
+      setOpen(false);
       return;
     }
 
-    setOpen(false);
+    setOpen(true);
+
+    requestAnimationFrame(() => {
+      updateMenuPosition();
+    });
   }
 
   useEffect(() => {
@@ -158,9 +130,6 @@ export function UserActions({
       return;
     }
 
-    /*
-     * Recalculate after the menu is mounted.
-     */
     requestAnimationFrame(() => {
       updateMenuPosition();
     });
@@ -197,10 +166,6 @@ export function UserActions({
 
     document.addEventListener("keydown", handleEscape);
 
-    /*
-     * Capture scrolling from the table's overflow container
-     * as well as the window.
-     */
     window.addEventListener("scroll", handleScroll, true);
 
     window.addEventListener("resize", handleResize);
@@ -255,6 +220,7 @@ export function UserActions({
     onRestore(user);
   }
 
+  const isDeleted = user.isDeleted;
   const isActive = user.status === "ACTIVE";
   const isInactive = user.status === "INACTIVE";
   const isSuspended = user.status === "SUSPENDED";
@@ -288,7 +254,6 @@ export function UserActions({
 
   return (
     <>
-      {/* Action trigger */}
       <div className="flex justify-end">
         <button
           ref={buttonRef}
@@ -306,8 +271,6 @@ export function UserActions({
             border
             border-[var(--border)]
             bg-[var(--surface)]
-            text-lg
-            leading-none
             text-[var(--foreground-muted)]
             transition
             hover:bg-[var(--background)]
@@ -348,37 +311,78 @@ export function UserActions({
               type="button"
               role="menuitem"
               onClick={handleView}
-              className="menu-item"
+              className="
+                flex
+                w-full
+                items-center
+                gap-3
+                rounded-lg
+                px-3
+                py-2.5
+                text-left
+                text-sm
+                text-[var(--foreground)]
+                transition
+                hover:bg-[var(--background)]
+              "
             >
-              <span className="menu-icon">◉</span>
+              <Eye className="h-4 w-4 text-[var(--foreground-muted)]" />
 
               <span>View Details</span>
             </button>
 
             {/* Edit */}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleEdit}
-              className="menu-item"
-            >
-              <span className="menu-icon">✎</span>
+            {!isDeleted && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleEdit}
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  text-left
+                  text-sm
+                  text-[var(--foreground)]
+                  transition
+                  hover:bg-[var(--background)]
+                "
+              >
+                <Pencil className="h-4 w-4 text-[var(--foreground-muted)]" />
 
-              <span>Edit User</span>
-            </button>
+                <span>Edit User</span>
+              </button>
+            )}
 
             <div className="my-1 border-t border-[var(--border)]" />
 
             {/* Active */}
-            {isActive && (
+            {!isDeleted && isActive && (
               <>
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => handleStatusChange("INACTIVE")}
-                  className="menu-item"
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-2.5
+                    text-left
+                    text-sm
+                    text-[var(--foreground)]
+                    transition
+                    hover:bg-[var(--background)]
+                  "
                 >
-                  <span className="menu-icon">○</span>
+                  <UserX className="h-4 w-4 text-[var(--foreground-muted)]" />
 
                   <span>Deactivate User</span>
                 </button>
@@ -387,9 +391,24 @@ export function UserActions({
                   type="button"
                   role="menuitem"
                   onClick={() => handleStatusChange("SUSPENDED")}
-                  className="menu-item"
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-2.5
+                    text-left
+                    text-sm
+                    text-amber-600
+                    transition
+                    hover:bg-amber-50
+                    dark:text-amber-400
+                    dark:hover:bg-amber-950/30
+                  "
                 >
-                  <span className="menu-icon text-amber-500">!</span>
+                  <ShieldAlert className="h-4 w-4" />
 
                   <span>Suspend User</span>
                 </button>
@@ -397,15 +416,30 @@ export function UserActions({
             )}
 
             {/* Inactive */}
-            {isInactive && (
+            {!isDeleted && isInactive && (
               <>
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => handleStatusChange("ACTIVE")}
-                  className="menu-item"
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-2.5
+                    text-left
+                    text-sm
+                    text-emerald-600
+                    transition
+                    hover:bg-emerald-50
+                    dark:text-emerald-400
+                    dark:hover:bg-emerald-950/30
+                  "
                 >
-                  <span className="menu-icon text-emerald-500">●</span>
+                  <UserCheck className="h-4 w-4" />
 
                   <span>Activate User</span>
                 </button>
@@ -414,9 +448,24 @@ export function UserActions({
                   type="button"
                   role="menuitem"
                   onClick={() => handleStatusChange("SUSPENDED")}
-                  className="menu-item"
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-2.5
+                    text-left
+                    text-sm
+                    text-amber-600
+                    transition
+                    hover:bg-amber-50
+                    dark:text-amber-400
+                    dark:hover:bg-amber-950/30
+                  "
                 >
-                  <span className="menu-icon text-amber-500">!</span>
+                  <ShieldAlert className="h-4 w-4" />
 
                   <span>Suspend User</span>
                 </button>
@@ -424,86 +473,141 @@ export function UserActions({
             )}
 
             {/* Suspended */}
-            {isSuspended && (
+            {!isDeleted && isSuspended && (
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => handleStatusChange("ACTIVE")}
-                className="menu-item"
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  text-left
+                  text-sm
+                  text-emerald-600
+                  transition
+                  hover:bg-emerald-50
+                  dark:text-emerald-400
+                  dark:hover:bg-emerald-950/30
+                "
               >
-                <span className="menu-icon text-emerald-500">●</span>
+                <UserCheck className="h-4 w-4" />
 
                 <span>Reactivate User</span>
               </button>
             )}
 
-            <div className="my-1 border-t border-[var(--border)]" />
+            {!isDeleted && (
+              <>
+                <div className="my-1 border-t border-[var(--border)]" />
 
-            {/* Revoke sessions */}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleRevokeSessions}
-              className="menu-item"
-            >
-              <span className="menu-icon">↻</span>
+                {/* Revoke sessions */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleRevokeSessions}
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-2.5
+                    text-left
+                    text-sm
+                    text-[var(--foreground)]
+                    transition
+                    hover:bg-[var(--background)]
+                  "
+                >
+                  <RotateCcw className="h-4 w-4 text-[var(--foreground-muted)]" />
 
-              <span>Revoke All Sessions</span>
-            </button>
+                  <span>Revoke All Sessions</span>
+                </button>
+              </>
+            )}
 
             <div className="my-1 border-t border-[var(--border)]" />
 
             {/* Delete */}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleDelete}
-              className="
-                flex
-                w-full
-                items-center
-                gap-3
-                rounded-lg
-                px-3
-                py-2.5
-                text-left
-                text-sm
-                text-[var(--danger)]
-                transition
-                hover:bg-[var(--danger-soft)]
-              "
-            >
-              <span className="flex w-5 justify-center">🗑</span>
+            {!isDeleted && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleDelete}
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  text-left
+                  text-sm
+                  text-[var(--danger)]
+                  transition
+                  hover:bg-[var(--danger-soft)]
+                "
+              >
+                <Trash2 className="h-4 w-4" />
 
-              <span>Delete User</span>
-            </button>
+                <span>Delete User</span>
+              </button>
+            )}
 
             {/* Restore */}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleRestore}
-              className="
-                flex
-                w-full
-                items-center
-                gap-3
-                rounded-lg
-                px-3
-                py-2.5
-                text-left
-                text-sm
-                text-emerald-600
-                transition
-                hover:bg-emerald-50
-                dark:text-emerald-400
-                dark:hover:bg-emerald-950/30
-              "
-            >
-              <span className="flex w-5 justify-center">↶</span>
+            {isDeleted && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleRestore}
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  text-left
+                  text-sm
+                  text-emerald-600
+                  transition
+                  hover:bg-emerald-50
+                  dark:text-emerald-400
+                  dark:hover:bg-emerald-950/30
+                "
+              >
+                <RotateCcw className="h-4 w-4" />
 
-              <span>Restore User</span>
-            </button>
+                <span>Restore User</span>
+              </button>
+            )}
+
+            {/* Deleted indicator */}
+            {isDeleted && (
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-3
+                  px-3
+                  py-2.5
+                  text-xs
+                  text-[var(--foreground-muted)]
+                "
+              >
+                <XCircle className="h-4 w-4" />
+
+                <span>User is deleted</span>
+              </div>
+            )}
           </div>,
           document.body
         )}

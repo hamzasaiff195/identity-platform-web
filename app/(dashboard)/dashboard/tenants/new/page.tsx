@@ -71,7 +71,7 @@ export default function NewTenantPage() {
         timezone: form.timezone?.trim() || undefined,
       });
 
-      router.push(`/dashboard/tenants/${result.tenant.id}`);
+      router.push(`/dashboard/tenants/${result.id}`);
     } catch (error) {
       console.error("[TENANT] Failed to create tenant:", error);
 

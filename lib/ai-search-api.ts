@@ -10,21 +10,26 @@ export type AiSearchSourceType = "ROLE" | "TENANT" | string;
 /* ROLE                                                                       */
 /* -------------------------------------------------------------------------- */
 
+export type AiSearchResourcePermission = {
+  permission: string;
+  resourceType: string;
+  resourceId: string;
+  metadata?: unknown;
+};
+
 export type AiSearchRoleData = {
   type: "ROLE";
-
   tenantId?: string;
   tenantName?: string;
-
   roleId?: string;
   roleName?: string;
   roleSlug?: string;
   roleScope?: string;
-
   description?: string | null;
-
   permissions?: string[];
   capabilities?: string[];
+  resourcePermissions?: AiSearchResourcePermission[];
+  resourceCapabilities?: string[];
 };
 
 /* -------------------------------------------------------------------------- */

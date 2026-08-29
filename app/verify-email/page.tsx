@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type VerificationState = "verifying" | "success" | "error";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const hasVerified = useRef(false);
 
   const [state, setState] = useState<VerificationState>("verifying");
-
   const [message, setMessage] = useState("Verifying your email address...");
 
   useEffect(() => {
@@ -24,7 +23,7 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    // Prevent React Strict Mode / duplicate execution
+    // Prevent duplicate verification requests in React Strict Mode.
     if (hasVerified.current) {
       return;
     }
@@ -35,18 +34,21 @@ export default function VerifyEmailPage() {
       try {
         console.log("📧 Verifying email...");
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/verification/email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              token,
-            }),
-          }
-        );
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+        if (!apiUrl) {
+          throw new Error("API URL is not configured.");
+        }
+
+        const response = await fetch(`${apiUrl}/verification/email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token,
+          }),
+        });
 
         const result = await response.json();
 
@@ -57,10 +59,9 @@ export default function VerifyEmailPage() {
         }
 
         setState("success");
-
         setMessage("Your email has been verified successfully.");
 
-        setTimeout(() => {
+        window.setTimeout(() => {
           router.replace("/dashboard");
         }, 2000);
       } catch (error) {
@@ -74,7 +75,7 @@ export default function VerifyEmailPage() {
       }
     }
 
-    verifyEmail();
+    void verifyEmail();
   }, [router, searchParams]);
 
   return (
@@ -139,5 +140,29 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+          <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-lg">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]" />
+
+            <h1 className="mt-5 text-2xl font-semibold text-[var(--foreground)]">
+              Verifying your email
+            </h1>
+
+            <p className="mt-3 text-sm text-[var(--foreground-muted)]">
+              Please wait...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

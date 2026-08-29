@@ -1,20 +1,12 @@
 import { api } from "@/lib/api";
 
-export type TenantStatus = "ACTIVE" | "INACTIVE";
+// -----------------------------------------------------------------------------
+// TYPES
+// -----------------------------------------------------------------------------
 
-export type Tenant = {
-  id: string;
-  name: string;
-  slug: string;
-  contactEmail?: string | null;
-  status: TenantStatus;
-  isActive: boolean;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+export type TenantStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
-export type TenantPagination = {
+export type Pagination = {
   page: number;
   limit: number;
   total: number;
@@ -23,9 +15,67 @@ export type TenantPagination = {
   hasPreviousPage: boolean;
 };
 
+// Keep the old name too because other existing components use it.
+export type TenantPagination = Pagination;
+
+export type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+
+  description?: string | null;
+  legalName?: string | null;
+
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+
+  websiteUrl?: string | null;
+
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+
+  status: TenantStatus;
+  isActive: boolean;
+  isDeleted: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateTenantInput = {
+  name: string;
+  slug: string;
+  description?: string;
+  legalName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  websiteUrl?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  timezone?: string;
+};
+
+export type UpdateTenantInput = {
+  name?: string;
+  slug?: string;
+  description?: string;
+  legalName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  websiteUrl?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  timezone?: string;
+  status?: TenantStatus;
+};
+
 export type TenantsResponse = {
   tenants: Tenant[];
-  pagination: TenantPagination;
+  pagination: Pagination;
 };
 
 export type TenantMember = {
@@ -33,18 +83,21 @@ export type TenantMember = {
   userId: string;
   tenantId: string;
   isActive: boolean;
-  joinedAt?: string;
+  joinedAt?: string | null;
+
   user: {
     id: string;
     email: string;
-    status: string;
+    status: TenantStatus;
     isEmailVerified: boolean;
+    isVerified: boolean;
+    createdAt: string;
   };
 };
 
 export type TenantMembersResponse = {
   members: TenantMember[];
-  pagination: TenantPagination;
+  pagination: Pagination;
 };
 
 // -----------------------------------------------------------------------------
@@ -94,11 +147,7 @@ export async function getTenant(
 
 export async function createTenant(
   accessToken: string,
-  data: {
-    name: string;
-    slug: string;
-    contactEmail?: string;
-  }
+  data: CreateTenantInput
 ): Promise<Tenant> {
   return api.post<Tenant>("/tenants", data, {
     headers: {
@@ -114,12 +163,7 @@ export async function createTenant(
 export async function updateTenant(
   accessToken: string,
   tenantId: string,
-  data: {
-    name?: string;
-    slug?: string;
-    contactEmail?: string;
-    status?: TenantStatus;
-  }
+  data: UpdateTenantInput
 ): Promise<Tenant> {
   return api.patch<Tenant>(`/tenants/${tenantId}`, data, {
     headers: {

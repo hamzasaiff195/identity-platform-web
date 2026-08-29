@@ -1028,7 +1028,7 @@ function TenantMemberRow({
 
       <td className="px-6 py-5">
         <span className="text-sm text-[var(--foreground-muted)]">
-          {formatDate(member.joinedAt)}
+          {member.joinedAt ? formatDate(member.joinedAt) : "—"}
         </span>
       </td>
 
@@ -1072,7 +1072,7 @@ function AccountStatusBadge({
     },
   } as const;
 
-  const current = config[status];
+  const current = config[status as keyof typeof config] ?? config.INACTIVE;
 
   return (
     <span
@@ -1262,7 +1262,7 @@ function MemberViewDialog({
 
           <InfoItem
             label="Joined Tenant"
-            value={formatDateTime(member.joinedAt)}
+            value={member.joinedAt ? formatDateTime(member.joinedAt) : "—"}
           />
 
           <InfoItem

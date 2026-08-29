@@ -1,24 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
 
 import { resetPassword } from "@/lib/auth-api";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
-
   const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
-
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
-
   const [success, setSuccess] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -28,19 +23,16 @@ export default function ResetPasswordPage() {
 
     if (!token) {
       setError("Invalid or missing reset token.");
-
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
-
       return;
     }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
-
       return;
     }
 
@@ -62,19 +54,19 @@ export default function ResetPasswordPage() {
   if (success) {
     return (
       <main className="identity-page flex min-h-screen items-center justify-center px-6">
+        {" "}
         <div className="w-full max-w-md">
+          {" "}
           <div className="identity-surface rounded-2xl p-8 text-center">
+            {" "}
             <p className="identity-eyebrow">Password updated</p>
-
             <h1 className="mt-2 text-2xl font-semibold">
               Password reset successful
             </h1>
-
             <p className="identity-muted mt-3 text-sm">
               Your password has been changed. All existing sessions have also
               been signed out.
             </p>
-
             <Link
               href="/login"
               className="identity-button-primary mt-6 block rounded-xl px-4 py-3 text-sm font-medium"
@@ -89,16 +81,16 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="identity-page flex min-h-screen items-center justify-center px-6">
+      {" "}
       <div className="w-full max-w-md">
+        {" "}
         <div className="identity-surface rounded-2xl p-8">
+          {" "}
           <p className="identity-eyebrow">Account recovery</p>
-
           <h1 className="mt-2 text-2xl font-semibold">Reset your password</h1>
-
           <p className="identity-muted mt-2 text-sm">
             Choose a new password for your account.
           </p>
-
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div>
               <label
@@ -155,5 +147,33 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function ResetPasswordLoading() {
+  return (
+    <main className="identity-page flex min-h-screen items-center justify-center px-6">
+      {" "}
+      <div className="w-full max-w-md">
+        {" "}
+        <div className="identity-surface rounded-2xl p-8 text-center">
+          {" "}
+          <p className="identity-eyebrow">Account recovery</p>
+          <h1 className="mt-2 text-2xl font-semibold">Reset your password</h1>
+          <p className="identity-muted mt-3 text-sm">
+            Loading password reset request...
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordLoading />}>
+      {" "}
+      <ResetPasswordForm />{" "}
+    </Suspense>
   );
 }
