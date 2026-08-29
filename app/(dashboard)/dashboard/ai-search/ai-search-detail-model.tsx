@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  X,
-  Shield,
-  Building2,
-  KeyRound,
-  CheckCircle2,
   Activity,
+  Building2,
+  CheckCircle2,
+  KeyRound,
+  Shield,
+  X,
 } from "lucide-react";
 
 import type {
@@ -28,17 +28,20 @@ export function AiSearchDetailModal({
   const isTenant = result.sourceType === "TENANT";
 
   const role = isRole ? (data as AiSearchRoleData) : null;
-
   const tenant = isTenant ? (data as AiSearchTenantData) : null;
 
-  const title = role?.roleName ?? tenant?.tenantName ?? result.sourceType;
+  const title =
+    role?.roleName ??
+    tenant?.tenantName ??
+    result.sourceType ??
+    "AI knowledge result";
 
   const subtitle =
     role?.tenantName ?? tenant?.tenantSlug ?? "Platform knowledge";
 
-  const semantic = result.semanticScore * 100;
-  const keyword = result.keywordScore * 100;
-  const hybrid = result.hybridScore * 100;
+  const semantic = percentage(result.semanticScore);
+  const keyword = percentage(result.keywordScore);
+  const hybrid = percentage(result.hybridScore);
 
   return (
     <div
@@ -60,6 +63,9 @@ export function AiSearchDetailModal({
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-search-detail-title"
         className="
           flex
           max-h-[90vh]
@@ -81,18 +87,20 @@ export function AiSearchDetailModal({
             flex
             items-start
             justify-between
+            gap-4
             border-b
             border-[var(--border)]
             px-6
             py-5
           "
         >
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-4">
             <div
               className="
                 flex
                 h-11
                 w-11
+                shrink-0
                 items-center
                 justify-center
                 rounded-xl
@@ -107,24 +115,49 @@ export function AiSearchDetailModal({
               )}
             </div>
 
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   className="
+                    rounded-full
+                    bg-[var(--primary-soft)]
+                    px-2.5
+                    py-1
                     font-mono
                     text-[9px]
+                    font-semibold
                     uppercase
-                    tracking-[0.18em]
+                    tracking-[0.15em]
                     text-[var(--primary)]
                   "
                 >
                   {result.sourceType}
                 </span>
+
+                <span
+                  className="
+                    rounded-full
+                    bg-[var(--success-soft)]
+                    px-2.5
+                    py-1
+                    font-mono
+                    text-[9px]
+                    font-semibold
+                    text-[var(--success)]
+                  "
+                >
+                  {hybrid.toFixed(1)}% match
+                </span>
               </div>
 
-              <h2 className="mt-1 text-xl font-semibold">{title}</h2>
+              <h2
+                id="ai-search-detail-title"
+                className="mt-2 truncate text-xl font-semibold"
+              >
+                {title}
+              </h2>
 
-              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              <p className="mt-1 truncate text-sm text-[var(--foreground-muted)]">
                 {subtitle}
               </p>
             </div>
@@ -133,9 +166,15 @@ export function AiSearchDetailModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
               rounded-xl
-              p-2
               text-[var(--foreground-muted)]
               transition
               hover:bg-[var(--surface-muted)]
@@ -174,31 +213,43 @@ export function AiSearchDetailModal({
 
           {/* TECHNICAL */}
 
-          <details className="mt-8">
+          <details className="group mt-8 overflow-hidden rounded-2xl border border-[var(--border)]">
             <summary
               className="
+                flex
                 cursor-pointer
-                text-sm
+                list-none
+                items-center
+                justify-between
+                px-4
+                py-3
+                text-xs
                 font-medium
                 text-[var(--foreground-muted)]
+                hover:bg-[var(--surface-muted)]
               "
             >
               Technical details
+              <span className="transition group-open:rotate-180">
+                <Activity className="h-4 w-4" />
+              </span>
             </summary>
 
-            <div className="mt-4 space-y-3">
-              <TechnicalRow label="Document" value={result.documentId} />
+            <div className="space-y-4 border-t border-[var(--border)] bg-[var(--surface-muted)] p-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TechnicalRow label="Document" value={result.documentId} />
 
-              <TechnicalRow label="Source" value={result.sourceId} />
+                <TechnicalRow label="Source" value={result.sourceId} />
 
-              <TechnicalRow label="Chunk" value={String(result.chunkIndex)} />
+                <TechnicalRow label="Chunk" value={String(result.chunkIndex)} />
+              </div>
 
               <div
                 className="
                   rounded-xl
                   border
                   border-[var(--border)]
-                  bg-[var(--surface-muted)]
+                  bg-[var(--surface)]
                   p-4
                 "
               >
@@ -214,8 +265,17 @@ export function AiSearchDetailModal({
                   Indexed content
                 </p>
 
-                <p className="mt-3 whitespace-pre-wrap text-xs leading-6 text-[var(--foreground-muted)]">
-                  {result.content}
+                <p
+                  className="
+                    mt-3
+                    whitespace-pre-wrap
+                    break-words
+                    text-xs
+                    leading-6
+                    text-[var(--foreground-muted)]
+                  "
+                >
+                  {result.content || "No indexed content available."}
                 </p>
               </div>
             </div>
@@ -257,9 +317,9 @@ export function AiSearchDetailModal({
   );
 }
 
-/* ========================================================================== */
-/* ROLE                                                                       */
-/* ========================================================================== */
+/* ========================================================================= */
+/* ROLE DETAILS                                                              */
+/* ========================================================================= */
 
 function RoleDetails({ role }: { role: AiSearchRoleData }) {
   return (
@@ -272,8 +332,11 @@ function RoleDetails({ role }: { role: AiSearchRoleData }) {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Info label="Name" value={role.roleName} />
+
           <Info label="Slug" value={role.roleSlug} />
+
           <Info label="Scope" value={role.roleScope} />
+
           <Info label="Tenant" value={role.tenantName} />
         </div>
       </section>
@@ -308,41 +371,71 @@ function RoleDetails({ role }: { role: AiSearchRoleData }) {
   );
 }
 
-/* ========================================================================== */
-/* TENANT                                                                     */
-/* ========================================================================== */
+/* ========================================================================= */
+/* TENANT DETAILS                                                            */
+/* ========================================================================= */
 
 function TenantDetails({ tenant }: { tenant: AiSearchTenantData }) {
   return (
-    <section>
-      <SectionTitle
-        icon={<Building2 className="h-4 w-4" />}
-        title="Tenant information"
-      />
+    <section className="space-y-7">
+      <section>
+        <SectionTitle
+          icon={<Building2 className="h-4 w-4" />}
+          title="Tenant information"
+        />
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Info label="Name" value={tenant.tenantName} />
-        <Info label="Slug" value={tenant.tenantSlug} />
-        <Info label="Legal name" value={tenant.legalName} />
-        <Info label="Email" value={tenant.contactEmail} />
-        <Info label="Phone" value={tenant.contactPhone} />
-        <Info label="Website" value={tenant.websiteUrl} />
-        <Info label="Country" value={tenant.country} />
-        <Info label="State" value={tenant.state} />
-        <Info label="City" value={tenant.city} />
-        <Info label="Timezone" value={tenant.timezone} />
-      </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Info label="Name" value={tenant.tenantName} />
 
-      <div className="mt-4">
-        <Info label="Description" value={tenant.description} />
-      </div>
+          <Info label="Slug" value={tenant.tenantSlug} />
+
+          <Info label="Legal name" value={tenant.legalName} />
+
+          <Info label="Email" value={tenant.contactEmail} />
+
+          <Info label="Phone" value={tenant.contactPhone} />
+
+          <Info label="Website" value={tenant.websiteUrl} />
+
+          <Info label="Country" value={tenant.country} />
+
+          <Info label="State" value={tenant.state} />
+
+          <Info label="City" value={tenant.city} />
+
+          <Info label="Timezone" value={tenant.timezone} />
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle
+          icon={<Activity className="h-4 w-4" />}
+          title="Description"
+        />
+
+        <div
+          className="
+            mt-4
+            rounded-xl
+            border
+            border-[var(--border)]
+            bg-[var(--surface-muted)]
+            p-4
+            text-sm
+            leading-6
+            text-[var(--foreground-secondary)]
+          "
+        >
+          {tenant.description || "No description available."}
+        </div>
+      </section>
     </section>
   );
 }
 
-/* ========================================================================== */
-/* GENERIC                                                                    */
-/* ========================================================================== */
+/* ========================================================================= */
+/* GENERIC DETAILS                                                           */
+/* ========================================================================= */
 
 function GenericDetails({ result }: { result: AiSearchResult }) {
   return (
@@ -359,17 +452,18 @@ function GenericDetails({ result }: { result: AiSearchResult }) {
           p-5
           text-sm
           leading-7
+          text-[var(--foreground-secondary)]
         "
       >
-        {result.content}
+        {result.content || "No knowledge content available."}
       </div>
     </section>
   );
 }
 
-/* ========================================================================== */
-/* SMALL COMPONENTS                                                           */
-/* ========================================================================== */
+/* ========================================================================= */
+/* SECTION TITLE                                                             */
+/* ========================================================================= */
 
 function SectionTitle({
   icon,
@@ -387,7 +481,14 @@ function SectionTitle({
   );
 }
 
+/* ========================================================================= */
+/* INFO                                                                      */
+/* ========================================================================= */
+
 function Info({ label, value }: { label: string; value?: string | null }) {
+  const displayValue =
+    typeof value === "string" && value.trim() ? value : "Not available";
+
   return (
     <div
       className="
@@ -411,10 +512,14 @@ function Info({ label, value }: { label: string; value?: string | null }) {
         {label}
       </p>
 
-      <p className="mt-1 text-sm font-medium">{value || "—"}</p>
+      <p className="mt-1 break-words text-sm font-medium">{displayValue}</p>
     </div>
   );
 }
+
+/* ========================================================================= */
+/* TAG SECTION                                                               */
+/* ========================================================================= */
 
 function TagSection({
   title,
@@ -450,7 +555,13 @@ function TagSection({
               "
             >
               {check && (
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--success)]" />
+                <CheckCircle2
+                  className="
+                    h-3.5
+                    w-3.5
+                    text-[var(--success)]
+                  "
+                />
               )}
 
               {value}
@@ -461,6 +572,10 @@ function TagSection({
     </section>
   );
 }
+
+/* ========================================================================= */
+/* SCORE                                                                     */
+/* ========================================================================= */
 
 function Score({
   label,
@@ -499,7 +614,7 @@ function Score({
           mt-2
           text-lg
           font-semibold
-          ${primary ? "text-[var(--primary)]" : ""}
+          ${primary ? "text-[var(--primary)]" : "text-[var(--foreground)]"}
         `}
       >
         {value.toFixed(2)}%
@@ -508,14 +623,57 @@ function Score({
   );
 }
 
-function TechnicalRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-xs text-[var(--foreground-muted)]">{label}</span>
+/* ========================================================================= */
+/* TECHNICAL ROW                                                             */
+/* ========================================================================= */
 
-      <span className="truncate font-mono text-[10px]" title={value}>
-        {value}
-      </span>
+function TechnicalRow({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  const displayValue = typeof value === "string" && value.trim() ? value : "—";
+
+  return (
+    <div className="min-w-0">
+      <p
+        className="
+          font-mono
+          text-[9px]
+          uppercase
+          tracking-widest
+          text-[var(--foreground-subtle)]
+        "
+      >
+        {label}
+      </p>
+
+      <p
+        className="
+          mt-1
+          truncate
+          font-mono
+          text-[10px]
+          text-[var(--foreground-muted)]
+        "
+        title={displayValue}
+      >
+        {displayValue}
+      </p>
     </div>
   );
+}
+
+/* ========================================================================= */
+/* HELPERS                                                                   */
+/* ========================================================================= */
+
+function percentage(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, value * 100));
 }
