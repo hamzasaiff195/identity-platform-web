@@ -4,8 +4,6 @@ import { api } from "@/lib/api";
 // TYPES
 // -----------------------------------------------------------------------------
 
-export type TenantStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
-
 export type Pagination = {
   page: number;
   limit: number;
@@ -15,7 +13,6 @@ export type Pagination = {
   hasPreviousPage: boolean;
 };
 
-// Keep the old name too because other existing components use it.
 export type TenantPagination = Pagination;
 
 export type Tenant = {
@@ -36,7 +33,6 @@ export type Tenant = {
   country?: string | null;
   timezone?: string | null;
 
-  status: TenantStatus;
   isActive: boolean;
   isDeleted: boolean;
 
@@ -70,7 +66,7 @@ export type UpdateTenantInput = {
   state?: string;
   country?: string;
   timezone?: string;
-  status?: TenantStatus;
+  isActive?: boolean;
 };
 
 export type TenantsResponse = {
@@ -88,7 +84,7 @@ export type TenantMember = {
   user: {
     id: string;
     email: string;
-    status: TenantStatus;
+    status: string;
     isEmailVerified: boolean;
     isVerified: boolean;
     createdAt: string;
@@ -134,7 +130,7 @@ export async function getTenant(
   accessToken: string,
   tenantId: string
 ): Promise<Tenant> {
-  return api.get<Tenant>(`/tenants/${tenantId}`, {
+  return api.get<Tenant>(`/tenants/${encodeURIComponent(tenantId)}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -165,7 +161,7 @@ export async function updateTenant(
   tenantId: string,
   data: UpdateTenantInput
 ): Promise<Tenant> {
-  return api.patch<Tenant>(`/tenants/${tenantId}`, data, {
+  return api.patch<Tenant>(`/tenants/${encodeURIComponent(tenantId)}`, data, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -173,7 +169,7 @@ export async function updateTenant(
 }
 
 // -----------------------------------------------------------------------------
-// GET MEMBERS
+// GET TENANT MEMBERS
 // -----------------------------------------------------------------------------
 
 export async function getTenantMembers(
@@ -193,7 +189,7 @@ export async function getTenantMembers(
   }
 
   return api.get<TenantMembersResponse>(
-    `/tenants/${tenantId}/members?${params.toString()}`,
+    `/tenants/${encodeURIComponent(tenantId)}/members?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -212,7 +208,7 @@ export async function addTenantMember(
   userId: string
 ): Promise<TenantMember> {
   return api.post<TenantMember>(
-    `/tenants/${tenantId}/members`,
+    `/tenants/${encodeURIComponent(tenantId)}/members`,
     { userId },
     {
       headers: {
@@ -231,9 +227,14 @@ export async function removeTenantMember(
   tenantId: string,
   userId: string
 ): Promise<void> {
-  return api.delete<void>(`/tenants/${tenantId}/members/${userId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  return api.delete<void>(
+    `/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(
+      userId
+    )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 }

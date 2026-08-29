@@ -45,25 +45,17 @@ const navigation: SidebarItemType[] = [
 
 const superAdminManagement: SidebarItemType[] = [
   {
-    name: "Roles",
-    href: "/dashboard/roles",
-    icon: RolesIcon,
-  },
-  {
-    name: "Permissions",
-    href: "/dashboard/permissions",
-    icon: PermissionsIcon,
+    name: "Users",
+    href: "/dashboard/users",
+    icon: UsersIcon,
   },
   {
     name: "Tenants",
     href: "/dashboard/tenants",
     icon: TenantsIcon,
   },
-];
-
-const adminManagement: SidebarItemType[] = [
   {
-    name: "Tenant Roles",
+    name: "Roles",
     href: "/dashboard/roles",
     icon: RolesIcon,
   },
@@ -97,7 +89,7 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
 
-  const { isSuperAdmin, isAdmin, loading } = useAuth();
+  const { isSuperAdmin, loading } = useAuth();
 
   function isActive(href: string) {
     if (href === "/dashboard") {
@@ -108,7 +100,6 @@ export function Sidebar({
   }
 
   const showSuperAdminManagement = !loading && isSuperAdmin;
-  const showAdminManagement = !loading && !isSuperAdmin && isAdmin;
 
   return (
     <>
@@ -154,10 +145,7 @@ export function Sidebar({
           ${mobileOpen ? "translate-x-0" : ""}
         `}
       >
-        {/* ========================================================= */}
         {/* BRAND */}
-        {/* ========================================================= */}
-
         <div
           className={`
             flex
@@ -240,13 +228,9 @@ export function Sidebar({
           </Link>
         </div>
 
-        {/* ========================================================= */}
         {/* NAVIGATION */}
-        {/* ========================================================= */}
-
         <nav className="flex-1 overflow-y-auto px-3 py-6">
           {/* Workspace */}
-
           <SidebarSectionLabel label="Workspace" collapsed={collapsed} first />
 
           <div className="space-y-1">
@@ -261,10 +245,7 @@ export function Sidebar({
             ))}
           </div>
 
-          {/* ===================================================== */}
-          {/* SUPER ADMIN */}
-          {/* ===================================================== */}
-
+          {/* PLATFORM ADMINISTRATION */}
           {showSuperAdminManagement && (
             <>
               <SidebarSectionLabel
@@ -286,35 +267,7 @@ export function Sidebar({
             </>
           )}
 
-          {/* ===================================================== */}
-          {/* TENANT ADMIN */}
-          {/* ===================================================== */}
-
-          {showAdminManagement && (
-            <>
-              <SidebarSectionLabel
-                label="Tenant administration"
-                collapsed={collapsed}
-              />
-
-              <div className="space-y-1">
-                {adminManagement.map((item) => (
-                  <SidebarItem
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    collapsed={collapsed}
-                    onCloseMobile={onCloseMobile}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ===================================================== */}
           {/* SYSTEM */}
-          {/* ===================================================== */}
-
           <SidebarSectionLabel label="System" collapsed={collapsed} />
 
           <div className="space-y-1">
@@ -330,10 +283,7 @@ export function Sidebar({
           </div>
         </nav>
 
-        {/* ========================================================= */}
         {/* ENVIRONMENT */}
-        {/* ========================================================= */}
-
         <div
           className={`
             shrink-0
@@ -428,8 +378,7 @@ export function Sidebar({
             </div>
           </div>
 
-          {/* Collapse button */}
-
+          {/* Collapse */}
           <button
             type="button"
             onClick={onToggle}
@@ -540,8 +489,6 @@ function SidebarItem({
         ${collapsed ? "lg:justify-center lg:px-0" : ""}
       `}
     >
-      {/* Active indicator */}
-
       {active && (
         <span
           className="
@@ -554,8 +501,6 @@ function SidebarItem({
           "
         />
       )}
-
-      {/* Icon */}
 
       <span
         className={`
@@ -579,8 +524,6 @@ function SidebarItem({
         <Icon className="h-4 w-4" />
       </span>
 
-      {/* Label */}
-
       <span
         className={`
           overflow-hidden
@@ -593,8 +536,6 @@ function SidebarItem({
       >
         {item.name}
       </span>
-
-      {/* Active dot */}
 
       {active && (
         <span
@@ -678,6 +619,7 @@ function SessionsIcon({ className }: { className?: string }) {
     </IconBase>
   );
 }
+
 function SecurityIcon({ className }: { className?: string }) {
   return (
     <IconBase className={className}>

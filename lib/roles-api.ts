@@ -1,7 +1,7 @@
 import { api } from "@/lib/api";
 
 // -----------------------------------------------------------------------------
-// Types
+// TYPES
 // -----------------------------------------------------------------------------
 
 export type RoleScope = "SYSTEM" | "TENANT";
@@ -15,7 +15,6 @@ export type Role = {
   tenantId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
-  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -61,8 +60,18 @@ export type UpdateRoleInput = {
   description?: string;
 };
 
+export type RoleAssignmentResponse = {
+  message: string;
+  role?: Role;
+};
+
+export type PermissionAssignmentResponse = {
+  message: string;
+  rolePermission?: RolePermission;
+};
+
 // -----------------------------------------------------------------------------
-// Tenant Roles
+// TENANT ROLES
 // -----------------------------------------------------------------------------
 
 export async function getTenantRoles(
@@ -102,7 +111,7 @@ export async function createTenantRole(
 }
 
 // -----------------------------------------------------------------------------
-// Single Role
+// SINGLE ROLE
 // -----------------------------------------------------------------------------
 
 export async function getRole(
@@ -145,7 +154,7 @@ export async function deleteRole(
 }
 
 // -----------------------------------------------------------------------------
-// Role Permissions
+// ROLE PERMISSIONS
 // -----------------------------------------------------------------------------
 
 export async function getRolePermissions(
@@ -166,8 +175,8 @@ export async function assignPermissionToRole(
   accessToken: string,
   roleId: string,
   permissionId: string
-) {
-  return api.post(
+): Promise<PermissionAssignmentResponse> {
+  return api.post<PermissionAssignmentResponse>(
     `/roles/${encodeURIComponent(roleId)}/permissions/${encodeURIComponent(
       permissionId
     )}`,
@@ -184,11 +193,80 @@ export async function removePermissionFromRole(
   accessToken: string,
   roleId: string,
   permissionId: string
-) {
-  return api.delete(
+): Promise<void> {
+  await api.delete(
     `/roles/${encodeURIComponent(roleId)}/permissions/${encodeURIComponent(
       permissionId
     )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
+// -----------------------------------------------------------------------------
+// SYSTEM ROLES
+// -----------------------------------------------------------------------------
+
+export async function getSystemRoles(accessToken: string): Promise<Role[]> {
+  return api.get<Role[]>("/roles/system", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+// -----------------------------------------------------------------------------
+// TENANT MEMBER ROLES
+// -----------------------------------------------------------------------------
+
+export async function assignTenantRole(
+  accessToken: string,
+  tenantId: string,
+  userId: string,
+  roleId: string
+): Promise<RoleAssignmentResponse> {
+  return api.post<RoleAssignmentResponse>(
+    `/roles/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(
+      userId
+    )}/roles/${encodeURIComponent(roleId)}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
+export async function getTenantMemberRoles(
+  accessToken: string,
+  tenantId: string,
+  userId: string
+): Promise<Role[]> {
+  return api.get<Role[]>(
+    `/roles/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(
+      userId
+    )}/roles`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
+export async function getTenantMemberPermissions(
+  accessToken: string,
+  tenantId: string,
+  userId: string
+): Promise<Permission[]> {
+  return api.get<Permission[]>(
+    `/roles/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(
+      userId
+    )}/permissions`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -1,5 +1,9 @@
 import { api } from "@/lib/api";
 
+// -----------------------------------------------------------------------------
+// TYPES
+// -----------------------------------------------------------------------------
+
 export type EffectiveTenantRole = {
   id: string;
   name: string;
@@ -18,9 +22,27 @@ export type EffectiveTenantPermission = {
 };
 
 export type TenantAuthorization = {
+  /**
+   * Whether the authenticated user is an active member
+   * of the requested tenant.
+   */
+  isMember: boolean;
+
+  /**
+   * Effective tenant roles assigned to the user.
+   */
   roles: EffectiveTenantRole[];
+
+  /**
+   * Effective permissions inherited from the user's
+   * tenant roles.
+   */
   permissions: EffectiveTenantPermission[];
 };
+
+// -----------------------------------------------------------------------------
+// GET TENANT AUTHORIZATION
+// -----------------------------------------------------------------------------
 
 export async function getTenantAuthorization(
   accessToken: string,

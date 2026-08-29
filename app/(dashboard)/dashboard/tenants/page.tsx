@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import { useAuth } from "@/providers/auth-provider";
-
 import { createTenant, getTenants, type Tenant } from "@/lib/tenants-api";
+
+const PAGE_SIZE = 10;
 
 export default function TenantsPage() {
   const { accessToken, isSuperAdmin, loading: authLoading } = useAuth();
@@ -17,6 +19,7 @@ export default function TenantsPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [search, setSearch] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -26,7 +29,11 @@ export default function TenantsPage() {
 
   const [creating, setCreating] = useState(false);
 
-  async function loadTenants() {
+  // ---------------------------------------------------------------------------
+  // Load tenants
+  // ---------------------------------------------------------------------------
+
+  const loadTenants = useCallback(async () => {
     if (!accessToken) {
       return;
     }
@@ -35,34 +42,106 @@ export default function TenantsPage() {
       setLoading(true);
       setError("");
 
-      const result = await getTenants(accessToken, page, 10, search);
+      const result = await getTenants(
+        accessToken,
+        page,
+        PAGE_SIZE,
+        submittedSearch
+      );
 
       setTenants(result.tenants);
       setTotalPages(result.pagination.totalPages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load tenants");
+      console.error("[TENANTS] Failed to load tenants:", err);
+
+      setTenants([]);
+      setTotalPages(1);
+
+      setError(err instanceof Error ? err.message : "Failed to load tenants.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [accessToken, page, submittedSearch]);
 
   useEffect(() => {
-    if (!authLoading) {
-      loadTenants();
+    if (authLoading) {
+      return;
     }
-  }, [authLoading, accessToken, page]);
 
-  function handleSearch(event: FormEvent) {
+    void loadTenants();
+  }, [authLoading, loadTenants]);
+
+  // ---------------------------------------------------------------------------
+  // Tenant statistics
+  // ---------------------------------------------------------------------------
+
+  const activeTenants = useMemo(
+    () => tenants.filter((tenant) => tenant.isActive).length,
+    [tenants]
+  );
+
+  const inactiveTenants = useMemo(
+    () => tenants.filter((tenant) => !tenant.isActive).length,
+    [tenants]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Search
+  // ---------------------------------------------------------------------------
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setPage(1);
-    loadTenants();
+    setSubmittedSearch(search.trim());
   }
 
-  async function handleCreate(event: FormEvent) {
+  function clearSearch() {
+    setSearch("");
+    setSubmittedSearch("");
+    setPage(1);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Create tenant
+  // ---------------------------------------------------------------------------
+
+  function openCreate() {
+    setError("");
+
+    setName("");
+    setSlug("");
+    setContactEmail("");
+
+    setShowCreate(true);
+  }
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!accessToken) {
+      setError("You are not authenticated.");
+      return;
+    }
+
+    const trimmedName = name.trim();
+    const normalizedSlug = slug.trim().toLowerCase();
+    const trimmedContactEmail = contactEmail.trim();
+
+    if (!trimmedName) {
+      setError("Tenant name is required.");
+      return;
+    }
+
+    if (!normalizedSlug) {
+      setError("Tenant slug is required.");
+      return;
+    }
+
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)) {
+      setError(
+        "Slug may contain only lowercase letters, numbers, and hyphens."
+      );
       return;
     }
 
@@ -71,9 +150,9 @@ export default function TenantsPage() {
       setError("");
 
       await createTenant(accessToken, {
-        name: name.trim(),
-        slug: slug.trim().toLowerCase(),
-        contactEmail: contactEmail.trim() || undefined,
+        name: trimmedName,
+        slug: normalizedSlug,
+        contactEmail: trimmedContactEmail || undefined,
       });
 
       setName("");
@@ -82,21 +161,35 @@ export default function TenantsPage() {
 
       setShowCreate(false);
 
+      setPage(1);
+
       await loadTenants();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create tenant");
+      console.error("[TENANTS] Failed to create tenant:", err);
+
+      setError(err instanceof Error ? err.message : "Failed to create tenant.");
     } finally {
       setCreating(false);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Loading
+  // ---------------------------------------------------------------------------
+
   if (authLoading || loading) {
     return <TenantsLoading />;
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      {/* Header */}
+      {/* --------------------------------------------------------------------- */}
+      {/* Header                                                                */}
+      {/* --------------------------------------------------------------------- */}
 
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -116,7 +209,7 @@ export default function TenantsPage() {
         {isSuperAdmin && (
           <button
             type="button"
-            onClick={() => setShowCreate(true)}
+            onClick={openCreate}
             className="
               rounded-xl
               bg-[var(--primary)]
@@ -134,7 +227,25 @@ export default function TenantsPage() {
         )}
       </section>
 
-      {/* Search */}
+      {/* --------------------------------------------------------------------- */}
+      {/* Statistics                                                            */}
+      {/* --------------------------------------------------------------------- */}
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <TenantStat label="Total Tenants" value={tenants.length} />
+
+        <TenantStat label="Active" value={activeTenants} variant="active" />
+
+        <TenantStat
+          label="Inactive"
+          value={inactiveTenants}
+          variant="inactive"
+        />
+      </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* Search                                                                */}
+      {/* --------------------------------------------------------------------- */}
 
       <section
         className="
@@ -150,6 +261,7 @@ export default function TenantsPage() {
           className="flex flex-col gap-3 sm:flex-row"
         >
           <input
+            type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search tenants..."
@@ -183,8 +295,33 @@ export default function TenantsPage() {
           >
             Search
           </button>
+
+          {submittedSearch && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="
+                rounded-xl
+                border
+                border-[var(--border)]
+                px-5
+                py-2.5
+                text-sm
+                font-medium
+                text-[var(--foreground-muted)]
+                transition
+                hover:bg-[var(--surface-hover)]
+              "
+            >
+              Clear
+            </button>
+          )}
         </form>
       </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* Error                                                                 */}
+      {/* --------------------------------------------------------------------- */}
 
       {error && (
         <div
@@ -203,7 +340,9 @@ export default function TenantsPage() {
         </div>
       )}
 
-      {/* Tenant table */}
+      {/* --------------------------------------------------------------------- */}
+      {/* Tenant table                                                          */}
+      {/* --------------------------------------------------------------------- */}
 
       <section
         className="
@@ -216,27 +355,21 @@ export default function TenantsPage() {
         "
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full min-w-[1000px] text-left">
             <thead>
               <tr className="border-b border-[var(--border)]">
-                <th className="px-6 py-4 text-xs font-medium text-[var(--foreground-muted)]">
-                  Tenant
-                </th>
+                <TenantTableHeader>Tenant</TenantTableHeader>
 
-                <th className="px-6 py-4 text-xs font-medium text-[var(--foreground-muted)]">
-                  Slug
-                </th>
+                <TenantTableHeader>Slug</TenantTableHeader>
 
-                <th className="px-6 py-4 text-xs font-medium text-[var(--foreground-muted)]">
-                  Contact
-                </th>
+                <TenantTableHeader>Contact</TenantTableHeader>
 
-                <th className="px-6 py-4 text-xs font-medium text-[var(--foreground-muted)]">
-                  Status
-                </th>
+                <TenantTableHeader>Status</TenantTableHeader>
 
-                <th className="px-6 py-4 text-xs font-medium text-[var(--foreground-muted)]">
-                  Created
+                <TenantTableHeader>Created</TenantTableHeader>
+
+                <th className="px-6 py-4 text-right text-xs font-medium text-[var(--foreground-muted)]">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -253,7 +386,9 @@ export default function TenantsPage() {
                     hover:bg-[var(--surface-hover)]
                   "
                 >
-                  <td className="px-6 py-4">
+                  {/* Tenant */}
+
+                  <td className="px-6 py-5">
                     <div>
                       <p className="text-sm font-semibold">{tenant.name}</p>
 
@@ -263,37 +398,73 @@ export default function TenantsPage() {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4">
+                  {/* Slug */}
+
+                  <td className="px-6 py-5">
                     <span className="rounded-lg bg-[var(--surface-muted)] px-2.5 py-1 font-mono text-xs">
                       {tenant.slug}
                     </span>
                   </td>
 
-                  <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
+                  {/* Contact */}
+
+                  <td className="px-6 py-5 text-sm text-[var(--foreground-muted)]">
                     {tenant.contactEmail || "—"}
                   </td>
 
-                  <td className="px-6 py-4">
-                    <span
-                      className={`
-                        rounded-lg
-                        px-2.5
-                        py-1
-                        text-xs
-                        font-medium
-                        ${
-                          tenant.status === "ACTIVE"
-                            ? "bg-[var(--success-soft)] text-[var(--success)]"
-                            : "bg-[var(--surface-muted)] text-[var(--foreground-muted)]"
-                        }
-                      `}
-                    >
-                      {tenant.status}
-                    </span>
+                  {/* Status */}
+
+                  <td className="px-6 py-5">
+                    <TenantStatusBadge active={tenant.isActive} />
                   </td>
 
-                  <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
-                    {new Date(tenant.createdAt).toLocaleDateString()}
+                  {/* Created */}
+
+                  <td className="px-6 py-5 text-sm text-[var(--foreground-muted)]">
+                    {formatDate(tenant.createdAt)}
+                  </td>
+
+                  {/* Actions */}
+
+                  <td className="px-6 py-5">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/dashboard/tenants/${tenant.id}`}
+                        className="
+                          rounded-lg
+                          border
+                          border-[var(--border)]
+                          px-3
+                          py-2
+                          text-xs
+                          font-medium
+                          text-[var(--foreground-muted)]
+                          transition
+                          hover:bg-[var(--surface-hover)]
+                        "
+                      >
+                        Manage
+                      </Link>
+
+                      <Link
+                        href={`/dashboard/tenants/${tenant.id}/roles`}
+                        className="
+                          rounded-lg
+                          border
+                          border-[var(--primary)]/20
+                          bg-[var(--primary-soft)]
+                          px-3
+                          py-2
+                          text-xs
+                          font-medium
+                          text-[var(--primary)]
+                          transition
+                          hover:opacity-80
+                        "
+                      >
+                        Roles
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -301,10 +472,18 @@ export default function TenantsPage() {
               {!tenants.length && (
                 <tr>
                   <td
-                    colSpan={5}
-                    className="px-6 py-16 text-center text-sm text-[var(--foreground-muted)]"
+                    colSpan={6}
+                    className="
+                      px-6
+                      py-16
+                      text-center
+                      text-sm
+                      text-[var(--foreground-muted)]
+                    "
                   >
-                    No tenants found.
+                    {submittedSearch
+                      ? "No tenants match your search."
+                      : "No tenants found."}
                   </td>
                 </tr>
               )}
@@ -312,7 +491,9 @@ export default function TenantsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* ------------------------------------------------------------------- */}
+        {/* Pagination                                                           */}
+        {/* ------------------------------------------------------------------- */}
 
         <div className="flex items-center justify-between border-t border-[var(--border)] px-6 py-4">
           <p className="text-xs text-[var(--foreground-muted)]">
@@ -333,6 +514,7 @@ export default function TenantsPage() {
                 text-xs
                 disabled:cursor-not-allowed
                 disabled:opacity-40
+                hover:bg-[var(--surface-hover)]
               "
             >
               Previous
@@ -351,6 +533,7 @@ export default function TenantsPage() {
                 text-xs
                 disabled:cursor-not-allowed
                 disabled:opacity-40
+                hover:bg-[var(--surface-hover)]
               "
             >
               Next
@@ -359,10 +542,28 @@ export default function TenantsPage() {
         </div>
       </section>
 
-      {/* Create modal */}
+      {/* --------------------------------------------------------------------- */}
+      {/* Create modal                                                          */}
+      {/* --------------------------------------------------------------------- */}
 
       {showCreate && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            flex
+            items-center
+            justify-center
+            bg-black/40
+            p-4
+          "
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !creating) {
+              setShowCreate(false);
+            }
+          }}
+        >
           <div
             className="
               w-full
@@ -387,7 +588,14 @@ export default function TenantsPage() {
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="text-xl text-[var(--foreground-muted)]"
+                disabled={creating}
+                className="
+                  text-xl
+                  text-[var(--foreground-muted)]
+                  transition
+                  hover:text-[var(--foreground)]
+                  disabled:opacity-50
+                "
               >
                 ×
               </button>
@@ -422,6 +630,7 @@ export default function TenantsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
+                  disabled={creating}
                   className="
                     rounded-xl
                     border
@@ -429,6 +638,7 @@ export default function TenantsPage() {
                     px-4
                     py-2.5
                     text-sm
+                    disabled:opacity-50
                   "
                 >
                   Cancel
@@ -458,6 +668,96 @@ export default function TenantsPage() {
     </div>
   );
 }
+
+/* ========================================================================== */
+/* TABLE HEADER                                                               */
+/* ========================================================================== */
+
+function TenantTableHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="px-6 py-4 text-left text-xs font-medium text-[var(--foreground-muted)]">
+      {children}
+    </th>
+  );
+}
+
+/* ========================================================================== */
+/* STATUS BADGE                                                               */
+/* ========================================================================== */
+
+function TenantStatusBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`
+        inline-flex
+        items-center
+        gap-2
+        rounded-full
+        px-3
+        py-1.5
+        text-xs
+        font-medium
+        ${
+          active
+            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+        }
+      `}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+}
+
+/* ========================================================================== */
+/* STAT                                                                       */
+/* ========================================================================== */
+
+function TenantStat({
+  label,
+  value,
+  variant = "default",
+}: {
+  label: string;
+  value: number;
+  variant?: "default" | "active" | "inactive";
+}) {
+  return (
+    <div
+      className="
+        rounded-2xl
+        border
+        border-[var(--border)]
+        bg-[var(--surface)]
+        p-5
+      "
+    >
+      <p className="text-sm text-[var(--foreground-muted)]">{label}</p>
+
+      <div className="mt-2 flex items-center gap-3">
+        <p className="text-2xl font-semibold">{value}</p>
+
+        {variant === "active" && (
+          <span className="text-xs font-medium text-[var(--success)]">
+            Active
+          </span>
+        )}
+
+        {variant === "inactive" && (
+          <span className="text-xs font-medium text-[var(--foreground-muted)]">
+            Inactive
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================================== */
+/* FIELD                                                                      */
+/* ========================================================================== */
 
 function Field({
   label,
@@ -503,14 +803,47 @@ function Field({
   );
 }
 
+/* ========================================================================== */
+/* LOADING                                                                    */
+/* ========================================================================== */
+
 function TenantsLoading() {
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="animate-pulse rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-8">
+      <div
+        className="
+          animate-pulse
+          rounded-3xl
+          border
+          border-[var(--border)]
+          bg-[var(--surface)]
+          p-8
+        "
+      >
         <div className="h-8 w-48 rounded bg-[var(--surface-muted)]" />
 
-        <div className="mt-8 h-64 rounded-2xl bg-[var(--surface-muted)]" />
+        <div className="mt-8 h-20 rounded-2xl bg-[var(--surface-muted)]" />
+
+        <div className="mt-4 h-64 rounded-2xl bg-[var(--surface-muted)]" />
       </div>
     </div>
   );
+}
+
+/* ========================================================================== */
+/* DATE                                                                       */
+/* ========================================================================== */
+
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
 }

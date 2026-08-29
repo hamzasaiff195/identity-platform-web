@@ -1,5 +1,9 @@
 import { api } from "@/lib/api";
 
+// -----------------------------------------------------------------------------
+// TYPES
+// -----------------------------------------------------------------------------
+
 export type Permission = {
   id: string;
   name: string;
@@ -29,72 +33,84 @@ export type UpdatePermissionInput = {
   isActive?: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
-
-console.log("[PERMISSIONS API] API_URL:", API_URL);
-
-async function request<T>(
-  path: string,
-  accessToken: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers ?? {}),
-    },
-  });
-
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(body?.message || body?.error || "Request failed.");
-  }
-
-  return body?.data ?? body;
-}
+// -----------------------------------------------------------------------------
+// GET ALL PERMISSIONS
+// -----------------------------------------------------------------------------
 
 export async function getPermissions(
   accessToken: string
 ): Promise<Permission[]> {
-  return request<Permission[]>("/permissions", accessToken);
+  return api.get<Permission[]>("/permissions", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 }
+
+// -----------------------------------------------------------------------------
+// GET SINGLE PERMISSION
+// -----------------------------------------------------------------------------
 
 export async function getPermission(
   accessToken: string,
   permissionId: string
 ): Promise<Permission> {
-  return request<Permission>(`/permissions/${permissionId}`, accessToken);
+  return api.get<Permission>(
+    `/permissions/${encodeURIComponent(permissionId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 }
+
+// -----------------------------------------------------------------------------
+// CREATE PERMISSION
+// -----------------------------------------------------------------------------
 
 export async function createPermission(
   accessToken: string,
   input: CreatePermissionInput
 ): Promise<Permission> {
-  return request<Permission>("/permissions", accessToken, {
-    method: "POST",
-    body: JSON.stringify(input),
+  return api.post<Permission>("/permissions", input, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 }
+
+// -----------------------------------------------------------------------------
+// UPDATE PERMISSION
+// -----------------------------------------------------------------------------
 
 export async function updatePermission(
   accessToken: string,
   permissionId: string,
   input: UpdatePermissionInput
 ): Promise<Permission> {
-  return request<Permission>(`/permissions/${permissionId}`, accessToken, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+  return api.patch<Permission>(
+    `/permissions/${encodeURIComponent(permissionId)}`,
+    input,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 }
+
+// -----------------------------------------------------------------------------
+// DELETE PERMISSION
+// -----------------------------------------------------------------------------
 
 export async function deletePermission(
   accessToken: string,
   permissionId: string
 ): Promise<void> {
-  await request(`/permissions/${permissionId}`, accessToken, {
-    method: "DELETE",
+  await api.delete<void>(`/permissions/${encodeURIComponent(permissionId)}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 }
